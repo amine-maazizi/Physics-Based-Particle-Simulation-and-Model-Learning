@@ -2,7 +2,8 @@
 
 ## Overview
 
-This project simulates falling particles with wall and ground collision (no inter-particle collision). The generated simulation data is used to train two models: 
+This project simulates falling particles with wall and ground collision (no inter-particle collision). The generated simulation data is saved.
+The second part of this projet  
 1. [x] **Linear Regression**
 2. [x] **Neural Network**
 3. [] **ARIMA**
