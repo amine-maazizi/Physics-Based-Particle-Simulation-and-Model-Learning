@@ -7,7 +7,6 @@ from simulation.config import *
 from simulation.particle import Particle
 from simulation.nn_particles import NNParticle
 
-
 class Simulation:
     def __init__(self, mode='testing', particle_number=50, nb_trials=1000, trial_duration=10.0, trial_stop_velocity=None):
         pygame.init()
@@ -80,24 +79,24 @@ class Simulation:
                 break
 
             # Collect current state data for all particles (inputs)
-            state = np.zeros((self.particle_number, 11))  # [x, y, vx, vy, elasticity, vx_initial, vy_initial, g, Δt, x_min, x_max]
+            state = np.zeros((self.particle_number, 10))  # [x, y, v_x0, v_y0, g, Δt, e, x_min, x_max, n]
             for i, particle in enumerate(particles):
                 x_physics = particle.position[0]
-                y_physics = HEIGHT - particle.position[1] # Invert y-coordinate for screen space
-                vx_physics = particle.velocity[0]
-                vy_physics = -particle.velocity[1]
+                y_physics = HEIGHT - particle.position[1]  # Invert y-coordinate for screen space
                 elasticity = particle.elasticity
                 vx_initial = particle.initial_velocity[0]
-                vy_initial = -particle.initial_velocity[1]
+                vy_initial = -particle.initial_velocity[1]  # Invert for screen space
                 g = -GRAVITY[1]
                 dt = DELTA_T
                 x_min = 0
                 x_max = WIDTH
+                n = timestep  # Step number
 
                 state[i] = [
-                    x_physics, y_physics, vx_physics, vy_physics,
-                    elasticity, vx_initial, vy_initial, g, dt,
-                    x_min, x_max
+                    x_physics, y_physics,
+                    vx_initial, vy_initial,
+                    g, dt, elasticity,
+                    x_min, x_max, n
                 ]
 
             trial_data.append(state)
@@ -121,7 +120,7 @@ class Simulation:
             self.clock.tick(60)
 
         # Convert trial data to numpy array and store
-        trial_data = np.array(trial_data)  # Shape: (T, n, 11)
+        trial_data = np.array(trial_data)  # Shape: (T, n, 10)
         self.dataset.append(trial_data)
         print(f"Trial {trial_idx + 1}/{self.nb_trials} completed with {timestep} timesteps.")
         return True
@@ -139,19 +138,30 @@ class Simulation:
         else:
             # Testing mode
             self.timestep = 0
+            accumulated_time = 0.0
+            last_time = time.time()
+
             while self.running:
+                # Calculate elapsed time since last frame
+                current_time = time.time()
+                frame_time = current_time - last_time
+                last_time = current_time
+                accumulated_time += frame_time
+
+                # Handle events
                 for event in pygame.event.get():
                     if event.type == pygame.QUIT:
                         self.running = False
 
-                # Update particles
-                for particle in self.particles:
-                    particle.update()
-                if self.mode == 'testing':
-                    for ml_particle in self.ml_particles:
-                        ml_particle.update()
-
-                self.timestep += 1
+                # Update particles at fixed time steps (DELTA_T)
+                while accumulated_time >= DELTA_T:
+                    for particle in self.particles:
+                        particle.update()
+                    if self.mode == 'testing':
+                        for ml_particle in self.ml_particles:
+                            ml_particle.update()
+                    accumulated_time -= DELTA_T
+                    self.timestep += 1
 
                 # Render
                 self.screen.fill(BACKGROUND_COLOR)
@@ -166,9 +176,9 @@ class Simulation:
         pygame.quit()
 
     def save_data(self):
-        # Stack trial data into a tensor of shape (N, T_max, n, 11)
+        # Stack trial data into a tensor of shape (N, T_max, n, 10)
         max_timesteps = max(trial.shape[0] for trial in self.dataset)
-        dataset_array = np.zeros((self.nb_trials, max_timesteps, self.particle_number, 11))
+        dataset_array = np.zeros((self.nb_trials, max_timesteps, self.particle_number, 10))
         for i, trial in enumerate(self.dataset):
             T = trial.shape[0]
             dataset_array[i, :T, :, :] = self.dataset[i]
