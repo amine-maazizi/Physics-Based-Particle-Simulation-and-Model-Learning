@@ -82,18 +82,22 @@ class Simulation:
             # Collect current state data for all particles (inputs)
             state = np.zeros((self.particle_number, 11))  # [x, y, vx, vy, elasticity, vx_initial, vy_initial, g, Δt, x_min, x_max]
             for i, particle in enumerate(particles):
+                x_physics = particle.position[0]
+                y_physics = HEIGHT - particle.position[1] # Invert y-coordinate for screen space
+                vx_physics = particle.velocity[0]
+                vy_physics = -particle.velocity[1]
+                elasticity = particle.elasticity
+                vx_initial = particle.initial_velocity[0]
+                vy_initial = -particle.initial_velocity[1]
+                g = -GRAVITY[1]
+                dt = DELTA_T
+                x_min = 0
+                x_max = WIDTH
+
                 state[i] = [
-                    particle.position[0],
-                    particle.position[1],
-                    particle.velocity[0],
-                    particle.velocity[1],
-                    particle.elasticity,
-                    particle.initial_velocity[0],  # True initial vx
-                    particle.initial_velocity[1],  # True initial vy
-                    -9.81 * DELTA_T,              # Gravity y-component scaled by Δt
-                    DELTA_T,                      # Timestep
-                    0,                            # x_min
-                    WIDTH                         # x_max
+                    x_physics, y_physics, vx_physics, vy_physics,
+                    elasticity, vx_initial, vy_initial, g, dt,
+                    x_min, x_max
                 ]
 
             trial_data.append(state)
