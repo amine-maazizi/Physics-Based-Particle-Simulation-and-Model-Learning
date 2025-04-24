@@ -10,9 +10,9 @@ sys.path.append('..')
 from models.model_architectures import ParticleNet, ParticleNetSCFC
 
 # Load the trained model
-model_name = 'particle_net_scfc'  
+model_name = 'particle_net'  
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-model = ParticleNetSCFC().to(device)
+model = ParticleNet().to(device)
 model.load_state_dict(torch.load(f'models/{model_name}.pth', map_location=device))
 model.eval()
 print(f'Loaded {model_name}.pth for inference')
